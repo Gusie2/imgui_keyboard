@@ -30,9 +30,43 @@ ImGuiGamepadStyle::ImGuiGamepadStyle() {
 	Colors[ImGuiGamepadCol_TriggerForeground] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
 }
 
+ImGuiGamepadState::ImGuiGamepadState()
+{
+	Buttons = {
+		{GamepadStart, false},
+		{GamepadBack, false},
+		{GamepadFaceLeft, false},
+		{GamepadFaceRight, false},
+		{GamepadFaceUp, false},
+		{GamepadFaceDown, false},
+		{GamepadDpadLeft, false},
+		{GamepadDpadRight, false},
+		{GamepadDpadUp, false},
+		{GamepadDpadDown, false},
+		{GamepadL1, false},
+		{GamepadR1, false},
+		{GamepadL3, false},
+		{GamepadR3, false}
+	};
+
+	Analogs = {
+		{GamepadL2, 0.0f},
+		{GamepadR2, 0.0f},
+		{GamepadLStickLeft, 0.0f},
+		{GamepadLStickRight, 0.0f},
+		{GamepadLStickUp, 0.0f},
+		{GamepadLStickDown, 0.0f},
+		{GamepadRStickLeft, 0.0f},
+		{GamepadRStickRight, 0.0f},
+		{GamepadRStickUp, 0.0f},
+		{GamepadRStickDown, 0.0f},
+	};
+}
+
 struct GamepadContext {
-	ImVector<ImGuiKey> HighlightedButtons;
+	ImVector<int> HighlightedButtons;
 	ImGuiGamepadStyle Style;
+	ImGuiGamepadState State;
 };
 
 static GamepadContext *GetContext() {
@@ -49,7 +83,7 @@ static ImU32 GetColorU32(ImGuiGamepadCol idx) {
 	return ImGui::ColorConvertFloat4ToU32(style.Colors[idx]);
 }
 
-static bool IsButtonHighlighted(ImGuiKey button) {
+static bool IsButtonHighlighted(int button) {
 	GamepadContext *ctx = GetContext();
 	for (int i = 0; i < ctx->HighlightedButtons.Size; i++) {
 		if (ctx->HighlightedButtons[i] == button) {
@@ -59,7 +93,7 @@ static bool IsButtonHighlighted(ImGuiKey button) {
 	return false;
 }
 
-void HighlightButton(ImGuiKey button, bool highlight) {
+void HighlightButton(int button, bool highlight) {
 	GamepadContext *ctx = GetContext();
 	if (highlight) {
 		if (!IsButtonHighlighted(button)) {
@@ -80,7 +114,7 @@ void ClearHighlights() {
 	ctx->HighlightedButtons.clear();
 }
 
-static void RenderButton(ImDrawList *draw_list, ImVec2 center, float radius, const char *label, ImGuiKey key,
+static void RenderButton(ImDrawList *draw_list, ImVec2 center, float radius, const char *label, ImGuiGamepadButtons button,
 						 float scale, bool showPressed) {
 	// Button background
 	draw_list->AddCircleFilled(center, radius, GetColorU32(ImGuiGamepadCol_ButtonBackground));
@@ -94,8 +128,8 @@ static void RenderButton(ImDrawList *draw_list, ImVec2 center, float radius, con
 	}
 
 	// Pressed/highlighted overlay
-	bool pressed = showPressed && ImGui::IsKeyDown(key);
-	bool highlighted = IsButtonHighlighted(key);
+	bool pressed = showPressed && GetContext()->State.Buttons[button];
+	bool highlighted = IsButtonHighlighted(button);
 	if (pressed) {
 		draw_list->AddCircleFilled(center, radius, GetColorU32(ImGuiGamepadCol_ButtonPressed));
 	} else if (highlighted) {
@@ -127,22 +161,22 @@ static void RenderDPad(ImDrawList *draw_list, ImVec2 center, float size, float s
 
 	// Direction highlights
 	if (showPressed) {
-		if (ImGui::IsKeyDown(ImGuiKey_GamepadDpadUp)) {
+		if (GetContext()->State.Buttons[GamepadDpadUp]) {
 			draw_list->AddRectFilled(ImVec2(center.x - arm_width * 0.4f, center.y - arm_length),
 									 ImVec2(center.x + arm_width * 0.4f, center.y - arm_width * 0.3f),
 									 GetColorU32(ImGuiGamepadCol_ButtonPressed), 2.0f * scale);
 		}
-		if (ImGui::IsKeyDown(ImGuiKey_GamepadDpadDown)) {
+		if (GetContext()->State.Buttons[GamepadDpadDown]) {
 			draw_list->AddRectFilled(ImVec2(center.x - arm_width * 0.4f, center.y + arm_width * 0.3f),
 									 ImVec2(center.x + arm_width * 0.4f, center.y + arm_length),
 									 GetColorU32(ImGuiGamepadCol_ButtonPressed), 2.0f * scale);
 		}
-		if (ImGui::IsKeyDown(ImGuiKey_GamepadDpadLeft)) {
+		if (GetContext()->State.Buttons[GamepadDpadLeft]) {
 			draw_list->AddRectFilled(ImVec2(center.x - arm_length, center.y - arm_width * 0.4f),
 									 ImVec2(center.x - arm_width * 0.3f, center.y + arm_width * 0.4f),
 									 GetColorU32(ImGuiGamepadCol_ButtonPressed), 2.0f * scale);
 		}
-		if (ImGui::IsKeyDown(ImGuiKey_GamepadDpadRight)) {
+		if (GetContext()->State.Buttons[GamepadDpadRight]) {
 			draw_list->AddRectFilled(ImVec2(center.x + arm_width * 0.3f, center.y - arm_width * 0.4f),
 									 ImVec2(center.x + arm_length, center.y + arm_width * 0.4f),
 									 GetColorU32(ImGuiGamepadCol_ButtonPressed), 2.0f * scale);
@@ -150,45 +184,59 @@ static void RenderDPad(ImDrawList *draw_list, ImVec2 center, float size, float s
 	}
 
 	// Highlighted directions
-	if (IsButtonHighlighted(ImGuiKey_GamepadDpadUp)) {
+	if (IsButtonHighlighted(GamepadDpadUp)) {
 		draw_list->AddRectFilled(ImVec2(center.x - arm_width * 0.4f, center.y - arm_length),
 								 ImVec2(center.x + arm_width * 0.4f, center.y - arm_width * 0.3f),
 								 GetColorU32(ImGuiGamepadCol_ButtonHighlighted), 2.0f * scale);
 	}
-	if (IsButtonHighlighted(ImGuiKey_GamepadDpadDown)) {
+	if (IsButtonHighlighted(GamepadDpadDown)) {
 		draw_list->AddRectFilled(ImVec2(center.x - arm_width * 0.4f, center.y + arm_width * 0.3f),
 								 ImVec2(center.x + arm_width * 0.4f, center.y + arm_length),
 								 GetColorU32(ImGuiGamepadCol_ButtonHighlighted), 2.0f * scale);
 	}
-	if (IsButtonHighlighted(ImGuiKey_GamepadDpadLeft)) {
+	if (IsButtonHighlighted(GamepadDpadLeft)) {
 		draw_list->AddRectFilled(ImVec2(center.x - arm_length, center.y - arm_width * 0.4f),
 								 ImVec2(center.x - arm_width * 0.3f, center.y + arm_width * 0.4f),
 								 GetColorU32(ImGuiGamepadCol_ButtonHighlighted), 2.0f * scale);
 	}
-	if (IsButtonHighlighted(ImGuiKey_GamepadDpadRight)) {
+	if (IsButtonHighlighted(GamepadDpadRight)) {
 		draw_list->AddRectFilled(ImVec2(center.x + arm_width * 0.3f, center.y - arm_width * 0.4f),
 								 ImVec2(center.x + arm_length, center.y + arm_width * 0.4f),
 								 GetColorU32(ImGuiGamepadCol_ButtonHighlighted), 2.0f * scale);
 	}
 }
 
-static void RenderAnalogStick(ImDrawList *draw_list, ImVec2 center, float size, ImGuiKey stickButton, float scale,
+static void RenderAnalogStick(ImDrawList *draw_list, ImVec2 center, float size, bool right, float scale,
 							  bool showPressed, bool showStickPos) {
 	// Stick base (outer circle)
 	draw_list->AddCircleFilled(center, size, GetColorU32(ImGuiGamepadCol_StickBackground));
 	draw_list->AddCircle(center, size, GetColorU32(ImGuiGamepadCol_Border), 0, 1.5f * scale);
 
+	auto& state = GetContext()->State;
+
 	// Stick position indicator (inner circle)
 	ImVec2 stick_pos = center;
 	if (showStickPos) {
-		// In a real implementation, you'd read actual stick values
-		// For demo, we just show center position
+		if (right)
+		{
+			stick_pos.x -= state.Analogs[GamepadRStickLeft] * size;
+			stick_pos.x += state.Analogs[GamepadRStickRight] * size;
+			stick_pos.y -= state.Analogs[GamepadRStickUp] * size;
+			stick_pos.y += state.Analogs[GamepadRStickDown] * size;
+		}
+		else
+		{
+			stick_pos.x -= state.Analogs[GamepadLStickLeft] * size;
+			stick_pos.x += state.Analogs[GamepadLStickRight] * size;
+			stick_pos.y -= state.Analogs[GamepadLStickUp] * size;
+			stick_pos.y += state.Analogs[GamepadLStickDown] * size;
+		}
 	}
 	draw_list->AddCircleFilled(stick_pos, size * 0.6f, GetColorU32(ImGuiGamepadCol_StickForeground));
 
 	// Click highlight
-	bool pressed = showPressed && ImGui::IsKeyDown(stickButton);
-	bool highlighted = IsButtonHighlighted(stickButton);
+	bool pressed = showPressed && (right ? state.Buttons[GamepadR3] : state.Buttons[GamepadL3]);
+	bool highlighted = IsButtonHighlighted(right ? GamepadR3 : GamepadL3);
 	if (pressed) {
 		draw_list->AddCircleFilled(center, size, GetColorU32(ImGuiGamepadCol_ButtonPressed));
 	} else if (highlighted) {
@@ -196,19 +244,17 @@ static void RenderAnalogStick(ImDrawList *draw_list, ImVec2 center, float size, 
 	}
 }
 
-static void RenderTrigger(ImDrawList *draw_list, ImVec2 pos, float width, float height, ImGuiKey key, float scale,
+static void RenderTrigger(ImDrawList *draw_list, ImVec2 pos, float width, float height, ImGuiGamepadAnalogs analog, float scale,
 						  bool showPressed, bool showTriggerLevel) {
 	// Trigger background
 	draw_list->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), GetColorU32(ImGuiGamepadCol_TriggerBackground),
 							 3.0f * scale);
 	draw_list->AddRect(pos, ImVec2(pos.x + width, pos.y + height), GetColorU32(ImGuiGamepadCol_Border), 3.0f * scale);
 
+	const float fill = GetContext()->State.Analogs[analog];
+
 	// Trigger fill level (would show analog value in real implementation)
 	if (showTriggerLevel) {
-		float fill = 0.0f; // Would be actual trigger value
-		if (showPressed && ImGui::IsKeyDown(key)) {
-			fill = 1.0f;
-		}
 		if (fill > 0.0f) {
 			draw_list->AddRectFilled(pos, ImVec2(pos.x + width * fill, pos.y + height),
 									 GetColorU32(ImGuiGamepadCol_TriggerForeground), 3.0f * scale);
@@ -216,8 +262,8 @@ static void RenderTrigger(ImDrawList *draw_list, ImVec2 pos, float width, float 
 	}
 
 	// Pressed/highlighted
-	bool pressed = showPressed && ImGui::IsKeyDown(key);
-	bool highlighted = IsButtonHighlighted(key);
+	bool pressed = showPressed && fill > 0.0f;
+	bool highlighted = IsButtonHighlighted(analog);
 	if (pressed) {
 		draw_list->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), GetColorU32(ImGuiGamepadCol_ButtonPressed),
 								 3.0f * scale);
@@ -227,7 +273,7 @@ static void RenderTrigger(ImDrawList *draw_list, ImVec2 pos, float width, float 
 	}
 }
 
-static void RenderShoulderButton(ImDrawList *draw_list, ImVec2 pos, float width, float height, ImGuiKey key,
+static void RenderShoulderButton(ImDrawList *draw_list, ImVec2 pos, float width, float height, ImGuiGamepadButtons button,
 								 const char *label, float scale, bool showPressed) {
 	draw_list->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), GetColorU32(ImGuiGamepadCol_ButtonBackground),
 							 5.0f * scale);
@@ -240,8 +286,8 @@ static void RenderShoulderButton(ImDrawList *draw_list, ImVec2 pos, float width,
 		draw_list->AddText(text_pos, GetColorU32(ImGuiGamepadCol_ButtonLabel), label);
 	}
 
-	bool pressed = showPressed && ImGui::IsKeyDown(key);
-	bool highlighted = IsButtonHighlighted(key);
+	bool pressed = showPressed && GetContext()->State.Buttons[button];
+	bool highlighted = IsButtonHighlighted(button);
 	if (pressed) {
 		draw_list->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), GetColorU32(ImGuiGamepadCol_ButtonPressed),
 								 5.0f * scale);
@@ -251,7 +297,7 @@ static void RenderShoulderButton(ImDrawList *draw_list, ImVec2 pos, float width,
 	}
 }
 
-void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
+void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadState state, ImGuiGamepadFlags flags) {
 	const ImGuiGamepadStyle &style = GetStyle();
 	const float scale = style.Scale * (ImGui::GetFontSize() / 13.0f);
 
@@ -283,13 +329,15 @@ void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
 
 	ImVec2 body_pos(canvas_pos.x + 10.0f * scale, canvas_pos.y + trigger_height + 10.0f * scale);
 
+	GetContext()->State = state;
+
 	// Draw triggers at top
 	if (!hideTriggerButtons) {
 		RenderTrigger(draw_list, ImVec2(body_pos.x + 15.0f * scale, canvas_pos.y + 5.0f * scale), trigger_width,
-					  trigger_height, ImGuiKey_GamepadL2, scale, showPressed, showTriggers);
+					  trigger_height, GamepadL2, scale, showPressed, showTriggers);
 		RenderTrigger(draw_list,
 					  ImVec2(body_pos.x + body_width - trigger_width - 15.0f * scale, canvas_pos.y + 5.0f * scale),
-					  trigger_width, trigger_height, ImGuiKey_GamepadR2, scale, showPressed, showTriggers);
+					  trigger_width, trigger_height, GamepadR2, scale, showPressed, showTriggers);
 	}
 
 	// Draw controller body
@@ -301,10 +349,10 @@ void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
 	// Shoulder buttons
 	if (!hideShoulderButtons) {
 		RenderShoulderButton(draw_list, ImVec2(body_pos.x + 10.0f * scale, body_pos.y + 5.0f * scale), trigger_width,
-							 trigger_height * 0.8f, ImGuiKey_GamepadL1, "L1", scale, showPressed);
+							 trigger_height * 0.8f, GamepadL1, "L1", scale, showPressed);
 		RenderShoulderButton(draw_list,
 							 ImVec2(body_pos.x + body_width - trigger_width - 10.0f * scale, body_pos.y + 5.0f * scale),
-							 trigger_width, trigger_height * 0.8f, ImGuiKey_GamepadR1, "R1", scale, showPressed);
+							 trigger_width, trigger_height * 0.8f, GamepadR1, "R1", scale, showPressed);
 	}
 
 	// D-pad (left side)
@@ -317,12 +365,12 @@ void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
 	if (!hideSticks) {
 		// Left analog stick
 		ImVec2 left_stick_center(body_pos.x + body_width * 0.35f, body_pos.y + body_height * 0.35f);
-		RenderAnalogStick(draw_list, left_stick_center, stick_size * 0.5f, ImGuiKey_GamepadL3, scale, showPressed,
+		RenderAnalogStick(draw_list, left_stick_center, stick_size * 0.5f, false, scale, showPressed,
 						  showSticks);
 
 		// Right analog stick
 		ImVec2 right_stick_center(body_pos.x + body_width * 0.65f, body_pos.y + body_height * 0.65f);
-		RenderAnalogStick(draw_list, right_stick_center, stick_size * 0.5f, ImGuiKey_GamepadR3, scale, showPressed,
+		RenderAnalogStick(draw_list, right_stick_center, stick_size * 0.5f, true, scale, showPressed,
 						  showSticks);
 	}
 
@@ -361,16 +409,16 @@ void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
 
 		// Top button (Y/Triangle/X)
 		RenderButton(draw_list, ImVec2(face_center.x, face_center.y - face_spacing * 0.5f), button_size * 0.5f, btn_top,
-					 ImGuiKey_GamepadFaceUp, scale, showPressed);
+					 GamepadFaceUp, scale, showPressed);
 		// Right button (B/Circle/A)
 		RenderButton(draw_list, ImVec2(face_center.x + face_spacing * 0.5f, face_center.y), button_size * 0.5f, btn_right,
-					 ImGuiKey_GamepadFaceRight, scale, showPressed);
+					 GamepadFaceRight, scale, showPressed);
 		// Bottom button (A/Cross/B)
 		RenderButton(draw_list, ImVec2(face_center.x, face_center.y + face_spacing * 0.5f), button_size * 0.5f, btn_bottom,
-					 ImGuiKey_GamepadFaceDown, scale, showPressed);
+					 GamepadFaceDown, scale, showPressed);
 		// Left button (X/Square/Y)
 		RenderButton(draw_list, ImVec2(face_center.x - face_spacing * 0.5f, face_center.y), button_size * 0.5f, btn_left,
-					 ImGuiKey_GamepadFaceLeft, scale, showPressed);
+					 GamepadFaceLeft, scale, showPressed);
 	}
 
 	// Center buttons (Start/Select or equivalent)
@@ -380,11 +428,11 @@ void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags) {
 
 		// Back/Select/Share
 		ImVec2 back_center(body_pos.x + body_width * 0.42f, center_y);
-		RenderButton(draw_list, back_center, center_btn_size, nullptr, ImGuiKey_GamepadBack, scale, showPressed);
+		RenderButton(draw_list, back_center, center_btn_size, nullptr, GamepadBack, scale, showPressed);
 
 		// Start/Options
 		ImVec2 start_center(body_pos.x + body_width * 0.58f, center_y);
-		RenderButton(draw_list, start_center, center_btn_size, nullptr, ImGuiKey_GamepadStart, scale, showPressed);
+		RenderButton(draw_list, start_center, center_btn_size, nullptr, GamepadStart, scale, showPressed);
 	}
 
 	draw_list->PopClipRect();
@@ -436,7 +484,7 @@ void GamepadDemo() {
 	if (showTriggers) {
 		flags |= ImGuiGamepadFlags_ShowTriggers;
 	}
-	Gamepad((ImGuiGamepadLayout)currentLayout, flags);
+	Gamepad((ImGuiGamepadLayout)currentLayout, ImGuiGamepadState(), flags);
 }
 #endif // IMGUI_DISABLE_DEMO_WINDOWS
 #endif // IMGUI_DISABLE

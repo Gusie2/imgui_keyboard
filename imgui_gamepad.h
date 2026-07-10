@@ -70,6 +70,39 @@ enum ImGuiGamepadCol_ {
 
 	ImGuiGamepadCol_COUNT
 };
+
+enum ImGuiGamepadButtons {
+	GamepadStart = 0,
+    GamepadBack = 1,
+    GamepadFaceLeft = 2,
+    GamepadFaceRight = 3,
+    GamepadFaceUp = 4,
+    GamepadFaceDown = 5,
+    GamepadDpadLeft = 6,
+    GamepadDpadRight = 7,
+    GamepadDpadUp = 8,
+    GamepadDpadDown = 9,
+    GamepadL1 = 10,
+    GamepadR1 = 11,
+    GamepadL3 = 12,
+    GamepadR3 = 13,
+	Unknown = 64
+};
+
+enum ImGuiGamepadAnalogs {
+	GamepadL2 = 14,
+	GamepadR2 = 15,
+	GamepadLStickLeft = 16,
+	GamepadLStickRight = 17,
+	GamepadLStickUp = 18,
+	GamepadLStickDown = 19,
+	GamepadRStickLeft = 20,
+	GamepadRStickRight = 21,
+	GamepadRStickUp = 22,
+	GamepadRStickDown = 23,
+	Undefined = 63
+};
+
 typedef int ImGuiGamepadCol;
 
 struct ImGuiGamepadStyle {
@@ -89,10 +122,18 @@ struct ImGuiGamepadStyle {
 	ImGuiGamepadStyle();
 };
 
+struct ImGuiGamepadState {
+	ImGuiGamepadState();
+
+	std::map<ImGuiGamepadButtons, bool> Buttons;
+	std::map<ImGuiGamepadAnalogs, float> Analogs;
+};
+
 ImGuiGamepadStyle &GetStyle();
-void HighlightButton(ImGuiKey button, bool highlight);
+void HighlightButton(ImGuiGamepadButtons button, bool highlight);
+void HighlightButton(ImGuiGamepadAnalogs analog, bool highlight);
 void ClearHighlights();
-void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadFlags flags = 0);
+void Gamepad(ImGuiGamepadLayout layout, ImGuiGamepadState state = {}, ImGuiGamepadFlags flags = 0);
 void GamepadDemo();
 
 } // namespace ImGamepad
