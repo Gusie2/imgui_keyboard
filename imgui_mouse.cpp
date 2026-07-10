@@ -171,7 +171,7 @@ void Mouse(ImGuiMouseLayout layout, ImGuiMouseFlags flags) {
 	draw_list->AddRectFilled(left_btn_min, left_btn_max, GetColorU32(ImGuiMouseCol_ButtonBackground), body_rounding,
 							 ImDrawFlags_RoundCornersTopLeft);
 	draw_list->AddRect(left_btn_min, left_btn_max, GetColorU32(ImGuiMouseCol_ButtonBorder), body_rounding,
-					   ImDrawFlags_RoundCornersTopLeft);
+					   ImDrawFlags_RoundCornersTopLeft, 1.0f);
 
 	// Left button pressed/highlighted/recorded overlay
 	bool leftPressed = showPressed && ImGui::IsMouseDown(ImGuiMouseButton_Left);
@@ -204,7 +204,7 @@ void Mouse(ImGuiMouseLayout layout, ImGuiMouseFlags flags) {
 	draw_list->AddRectFilled(right_btn_min, right_btn_max, GetColorU32(ImGuiMouseCol_ButtonBackground), body_rounding,
 							 ImDrawFlags_RoundCornersTopRight);
 	draw_list->AddRect(right_btn_min, right_btn_max, GetColorU32(ImGuiMouseCol_ButtonBorder), body_rounding,
-					   ImDrawFlags_RoundCornersTopRight);
+					   ImDrawFlags_RoundCornersTopRight, 1.0f);
 
 	// Right button pressed/highlighted/recorded overlay
 	bool rightPressed = showPressed && ImGui::IsMouseDown(ImGuiMouseButton_Right);
