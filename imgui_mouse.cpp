@@ -130,7 +130,7 @@ void Mouse(ImGuiMouseLayout layout, ImGuiMouseFlags flags) {
 	ImDrawList *draw_list = ImGui::GetWindowDrawList();
 	draw_list->PushClipRect(canvas_pos, ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y), true);
 
-	ImVec2 body_pos(canvas_pos.x + 5.0f * scale, canvas_pos.y + 5.0f * scale);
+	ImVec2 body_pos(canvas_pos.x + 7.5f * scale, canvas_pos.y + 5.0f * scale);
 
 	// Draw mouse body
 	draw_list->AddRectFilled(body_pos, ImVec2(body_pos.x + body_width, body_pos.y + body_height),
@@ -139,7 +139,8 @@ void Mouse(ImGuiMouseLayout layout, ImGuiMouseFlags flags) {
 					   GetColorU32(ImGuiMouseCol_Border), body_rounding, 0, 2.0f * scale);
 
 	// Calculate button layout
-	const bool threeButton = (layout == ImGuiMouseLayout_ThreeButton);
+	const bool threeButton = (layout == ImGuiMouseLayout_ThreeButton || layout == ImGuiMouseLayout_FiveButton);
+	const bool fiveButton = (layout == ImGuiMouseLayout_FiveButton);
 	const bool showWheel = (flags & ImGuiMouseFlags_ShowWheel);
 	const bool showPressed = (flags & ImGuiMouseFlags_ShowPressed);
 	const bool recordable = (flags & ImGuiMouseFlags_Recordable);
@@ -276,6 +277,57 @@ void Mouse(ImGuiMouseLayout layout, ImGuiMouseFlags flags) {
 		}
 	}
 
+	// Side buttons
+	if (fiveButton) {
+		const float button_left_x = body_pos.x - wheel_width;
+
+		// Top side button
+		{
+			const float button_center_y = body_pos.y + (body_height * 0.35f);
+			const float button_top_y = button_center_y - (wheel_height * 0.5f);
+			const float button_bottom_y = button_center_y + (wheel_height * 0.5f);
+			draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonBackground), body_rounding, ImDrawFlags_RoundCornersLeft);
+
+			const bool pressed = showPressed && ImGui::IsMouseDown(4);
+			const bool highlighted = IsButtonHighlighted(4);
+			const bool recorded = recordable && IsButtonRecorded(4);
+
+			if (pressed) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonPressed), body_rounding,
+										 ImDrawFlags_RoundCornersLeft);
+			} else if (highlighted) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonHighlighted),
+										 body_rounding, ImDrawFlags_RoundCornersLeft);
+			} else if (recorded) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonRecorded), body_rounding,
+										 ImDrawFlags_RoundCornersLeft);
+			}
+		}
+
+		// Bottom side button
+		{
+			const float button_center_y = body_pos.y + (body_height * 0.65f);
+			const float button_top_y = button_center_y - (wheel_height * 0.5f);
+			const float button_bottom_y = button_center_y + (wheel_height * 0.5f);
+			draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonBackground), body_rounding, ImDrawFlags_RoundCornersLeft);
+
+			const bool pressed = showPressed && ImGui::IsMouseDown(3);
+			const bool highlighted = IsButtonHighlighted(3);
+			const bool recorded = recordable && IsButtonRecorded(3);
+
+			if (pressed) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonPressed), body_rounding,
+										 ImDrawFlags_RoundCornersLeft);
+			} else if (highlighted) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonHighlighted),
+										 body_rounding, ImDrawFlags_RoundCornersLeft);
+			} else if (recorded) {
+				draw_list->AddRectFilled(ImVec2(button_left_x, button_top_y), ImVec2(body_pos.x, button_bottom_y), GetColorU32(ImGuiMouseCol_ButtonRecorded), body_rounding,
+										 ImDrawFlags_RoundCornersLeft);
+			}
+		}
+	}
+
 	draw_list->PopClipRect();
 }
 
@@ -292,7 +344,7 @@ void MouseDemo() {
 	// Layout selection
 	ImGui::Text("Layout:");
 	ImGui::SameLine();
-	const char *layoutNames[] = {"Two Button", "Three Button"};
+	const char *layoutNames[] = {"Two Button", "Three Button", "Five Button"};
 	if (ImGui::BeginCombo("##MouseLayout", layoutNames[currentLayout])) {
 		for (int i = 0; i < ImGuiMouseLayout_Count; i++) {
 			const bool isSelected = (currentLayout == i);

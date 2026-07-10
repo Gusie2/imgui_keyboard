@@ -33,6 +33,7 @@ namespace ImMouse {
 enum ImGuiMouseLayout_ {
 	ImGuiMouseLayout_TwoButton,	  // Standard two-button mouse
 	ImGuiMouseLayout_ThreeButton, // Three-button mouse (with middle click)
+	ImGuiMouseLayout_FiveButton, // Five-button mouse (with both middle click and two side buttons)
 
 	ImGuiMouseLayout_Count
 };
